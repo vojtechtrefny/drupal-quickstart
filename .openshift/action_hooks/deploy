@@ -101,6 +101,13 @@ END
   cat ${OPENSHIFT_TMP_DIR}/settings.php > ${DRUPAL_SETTINGS}
 
   #
+  # Set a base_url with correct scheme, based on the current request. This is
+  # used for internal links to stylesheets and javascript.
+  #
+  echo "\$scheme = !empty(\$src['HTTPS']) ? 'https' : 'http';" >> ${DRUPAL_SETTINGS}
+  echo "\$base_url = \$scheme . '://' . \$src['HTTP_HOST'];" >> ${DRUPAL_SETTINGS}
+
+  #
   # Use the temporary directories that OpenShift provides, and set
   # the private path to be inside the data dir
   #
