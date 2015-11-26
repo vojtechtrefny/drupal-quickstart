@@ -1,8 +1,8 @@
 #!/bin/bash
-# This is a simple build script and will be executed on your CI system if 
+# This is a simple build script and will be executed on your CI system if
 # available.  Otherwise it will execute while your application is stopped
 # before the deploy step.  This script gets executed directly, so it
-# could be python, php, ruby, etc. 
+# could be python, php, ruby, etc.
 
 set -e
 
@@ -38,26 +38,31 @@ then
   echo
 
   mkdir -p ${OPENSHIFT_DATA_DIR}downloads
-  if ! drush dl drupal --destination=${OPENSHIFT_DATA_DIR}downloads --yes
+  # if ! drush dl drupal --destination=${OPENSHIFT_DATA_DIR}downloads --yes
+  if ! wget -P ${OPENSHIFT_DATA_DIR}downloads http://ftp.drupal.org/files/projects/drupal-7.41.tar.gz
   then
     echo "ERROR: Unable download and install Drupal."
     exit 7
   fi
 
+  if ! tar --directory=${OPENSHIFT_DATA_DIR}/downloads -xzf ${OPENSHIFT_DATA_DIR}downloads/drupal-7.41.tar.gz
+  then
+    echo "ERROR: Unable to extract Drupal."
+    exit 12
+  fi
+
   #
   # Link the /current symlink to the latest Drupal instance
   #
-  rm -f ${OPENSHIFT_DATA_DIR}downloads/current
-  LATEST=$(ls -1t ${OPENSHIFT_DATA_DIR}downloads | head -1)
-  export DRUPAL_INSTALL_DIR="${OPENSHIFT_DATA_DIR}downloads/${LATEST}"
-  ln -s ${LATEST} ${OPENSHIFT_DATA_DIR}downloads/current
+  export DRUPAL_INSTALL_DIR="${OPENSHIFT_DATA_DIR}downloads/`ls -1rt ${OPENSHIFT_DATA_DIR}downloads | head -1`"
+  ln -s ${DRUPAL_INSTALL_DIR} ${OPENSHIFT_DATA_DIR}downloads/current
 
   mv $DRUPAL_INSTALL_DIR/sites $DRUPAL_INSTALL_DIR/sites.original
 
   #
   # Ensure there is a default health check
   #
-  cp ${OPENSHIFT_REPO_DIR}.openshift/health_check.php ${DRUPAL_INSTALL_DIR}
+  # cp ${OPENSHIFT_REPO_DIR}.openshift/health_check.php ${DRUPAL_INSTALL_DIR}
 
   patch ${DRUPAL_INSTALL_DIR}/.htaccess < ${OPENSHIFT_REPO_DIR}.openshift/.htaccess.patch
 
@@ -85,7 +90,7 @@ fi
 #
 ln -sfn ../../data/downloads/current ${OPENSHIFT_REPO_DIR}php
 if [ ! -d "${OPENSHIFT_REPO_DIR}php" ]
-then  
+then
   echo "ERROR: Unable to link the PHP directory, as the current Drupal instance is not a valid directory."
   exit 8
 fi
